@@ -3,7 +3,9 @@ package com.baidu.disconf.web.web.config.controller;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.List;
-
+import com.baidu.disconf.web.utils.CodeUtils;
+import com.baidu.dsp.common.controller.BaseController;
+import com.baidu.dsp.common.vo.JsonObjectBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +15,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
-
 import com.baidu.disconf.core.common.constants.DisConfigTypeEnum;
 import com.baidu.disconf.core.common.json.ValueVo;
 import com.baidu.disconf.web.service.config.bo.Config;
@@ -25,12 +26,10 @@ import com.baidu.disconf.web.web.config.validator.ConfigValidator;
 import com.baidu.disconf.web.web.config.validator.ConfigValidator4Fetch;
 import com.baidu.dsp.common.annotation.NoAuth;
 import com.baidu.dsp.common.constant.WebConstants;
-import com.baidu.dsp.common.controller.BaseController;
 import com.baidu.dsp.common.exception.DocumentNotFoundException;
-import com.baidu.dsp.common.vo.JsonObjectBase;
 
 /**
- * 配置获取Controller, Disconf-client专门使用的
+ * ????Controller, Disconf-client?????
  *
  * @author liaoqiqi
  * @version 2014-6-16
@@ -51,7 +50,7 @@ public class ConfigFetcherController extends BaseController {
     private ConfigFetchMgr configFetchMgr;
 
     /**
-     * 获取指定app env version 的配置项列表
+     * ????app env version ??????
      *
      * @param confForm
      *
@@ -72,7 +71,7 @@ public class ConfigFetcherController extends BaseController {
     }
 
     /**
-     * 获取配置项 Item
+     * ????? Item
      *
      * @param confForm
      *
@@ -82,11 +81,9 @@ public class ConfigFetcherController extends BaseController {
     @RequestMapping(value = "/item", method = RequestMethod.GET)
     @ResponseBody
     public ValueVo getItem(ConfForm confForm) {
-
         LOG.info(confForm.toString());
-
         //
-        // 校验
+        // ??
         //
         ConfigFullModel configModel = null;
         try {
@@ -95,13 +92,11 @@ public class ConfigFetcherController extends BaseController {
             LOG.warn(e.toString());
             return ConfigUtils.getErrorVo(e.getMessage());
         }
-
-        return configFetchMgr.getConfItemByParameter(configModel.getApp().getId(), configModel.getEnv().getId(),
-                configModel.getVersion(), configModel.getKey());
+        return configFetchMgr.getConfItemByParameter(configModel.getApp().getId(), configModel.getEnv().getId(), configModel.getVersion(), configModel.getKey());
     }
 
     /**
-     * 获取配置文件
+     * ??????
      *
      * @return
      */
@@ -109,11 +104,9 @@ public class ConfigFetcherController extends BaseController {
     @RequestMapping(value = "/file", method = RequestMethod.GET)
     @ResponseBody
     public HttpEntity<byte[]> getFile(ConfForm confForm) {
-
         boolean hasError = false;
-
         //
-        // 校验
+        // ??
         //
         ConfigFullModel configModel = null;
         try {
@@ -122,26 +115,20 @@ public class ConfigFetcherController extends BaseController {
             LOG.error(e.toString());
             hasError = true;
         }
-
         if (hasError == false) {
             try {
                 //
-                Config config = configFetchMgr
-                        .getConfByParameter(configModel.getApp().getId(), configModel.getEnv().getId(),
-                                configModel.getVersion(), configModel.getKey(),
-                                DisConfigTypeEnum.FILE);
+                Config config = configFetchMgr.getConfByParameter(configModel.getApp().getId(), configModel.getEnv().getId(), configModel.getVersion(), configModel.getKey(), DisConfigTypeEnum.FILE);
                 if (config == null) {
                     hasError = true;
                     throw new DocumentNotFoundException(configModel.getKey());
                 }
-
-                return downloadDspBill(configModel.getKey(), config.getValue());
-
+                //API????????????????
+                return downloadDspBill(configModel.getKey(), CodeUtils.unicodeToUtf8(config.getValue()));
             } catch (Exception e) {
                 LOG.error(e.toString());
             }
         }
-
         if (confForm.getKey() != null) {
             throw new DocumentNotFoundException(confForm.getKey());
         } else {
@@ -150,25 +137,21 @@ public class ConfigFetcherController extends BaseController {
     }
 
     /**
-     * 下载
+     * ??
      *
      * @param fileName
      *
      * @return
      */
     public HttpEntity<byte[]> downloadDspBill(String fileName, String value) {
-
         HttpHeaders header = new HttpHeaders();
         byte[] res = value.getBytes();
-
         String name = null;
-
         try {
             name = URLEncoder.encode(fileName, "UTF-8");
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
-
         header.set("Content-Disposition", "attachment; filename=" + name);
         header.setContentLength(res.length);
         return new HttpEntity<byte[]>(res, header);
@@ -176,17 +159,11 @@ public class ConfigFetcherController extends BaseController {
 
     private JsonObjectBase getListImp(ConfForm confForm, boolean hasValue) {
         LOG.info(confForm.toString());
-
         //
-        // 校验
+        // ??
         //
         ConfigFullModel configModel = configValidator4Fetch.verifyConfForm(confForm, true);
-
-        List<Config> configs =
-                configFetchMgr.getConfListByParameter(configModel.getApp().getId(), configModel.getEnv().getId(),
-                        configModel.getVersion(), hasValue);
-
+        List<Config> configs = configFetchMgr.getConfListByParameter(configModel.getApp().getId(), configModel.getEnv().getId(), configModel.getVersion(), hasValue);
         return buildListSuccess(configs, configs.size());
     }
-
 }
